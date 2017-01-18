@@ -52,30 +52,30 @@ public abstract class BaseSearchActivity extends AppCompatActivity {
 
         RecyclerView list = (RecyclerView) findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(this));
-        list.setAdapter(mAdapter = new CheeseAdapter());
+        list.setAdapter(this.mAdapter = new CheeseAdapter());
 
-        mQueryEditText = (EditText) findViewById(R.id.query_edit_text);
-        mSearchButton = (Button) findViewById(R.id.search_button);
-        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        this.mQueryEditText = (EditText) findViewById(R.id.query_edit_text);
+        this.mSearchButton = (Button) findViewById(R.id.search_button);
+        this.mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
         List<String> cheeses = Arrays.asList(getResources().getStringArray(R.array.cheeses));
-        mCheeseSearchEngine = new CheeseSearchEngine(cheeses);
+        this.mCheeseSearchEngine = new CheeseSearchEngine(cheeses);
     }
 
     protected void showProgressBar() {
-        mProgressBar.setVisibility(View.VISIBLE);
+        this.mProgressBar.setVisibility(View.VISIBLE);
     }
 
     protected void hideProgressBar() {
-        mProgressBar.setVisibility(View.GONE);
+        this.mProgressBar.setVisibility(View.GONE);
     }
 
     protected void showResult(List<String> result) {
         if (result.isEmpty()) {
             Toast.makeText(this, R.string.nothing_found, Toast.LENGTH_SHORT).show();
-            mAdapter.setCheeses(Collections.<String>emptyList());
+            this.mAdapter.setCheeses(Collections.<String>emptyList());
         } else {
-            mAdapter.setCheeses(result);
+            this.mAdapter.setCheeses(result);
         }
     }
 

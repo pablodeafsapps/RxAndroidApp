@@ -23,28 +23,54 @@
 package com.raywenderlich.cheesefinder;
 
 
+import android.util.Log;
 import android.view.View;
+
+import java.util.List;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Cancellable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 public class CheeseActivity extends BaseSearchActivity {
+
+    private static final String TAG = CheeseActivity.class.getSimpleName();
 
     @Override
     protected void onStart() {
         super.onStart();   // It is always important to let the parent perform first!
 
         // The 'onStart' method is an ideal place to subscribe to any Observable
-        this.createButtonClickObservable().subscribe(new Consumer<String>() {
-            // 'accept' will be called when the observable emits an item
-            @Override
-            public void accept(String query) throws Exception {
-                showResult(mCheeseSearchEngine.search(query));
-            }
-        });
+        this.createButtonClickObservable()
+                .observeOn(AndroidSchedulers.mainThread())   // Ensures that the next operator in chain will be run on the main thread
+                .doOnNext(new Consumer<String>() {   // Called every time a new item is emitted
+                    @Override
+                    public void accept(String s) throws Exception {
+                        CheeseActivity.super.showProgressBar();
+                    }
+                })
+                .observeOn(Schedulers.io())   // The next operator should be called on the I/O thread
+                .map(new Function<String, List<String>>() {
+                    // For each search query, a list of results is returned
+                    @Override
+                    public List<String> apply(String query) throws Exception {
+                        return CheeseActivity.super.mCheeseSearchEngine.search(query);
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<List<String>>() {
+                    // 'accept' will be called when the observable emits an item
+                    @Override
+                    public void accept(List<String> result) throws Exception {
+                        CheeseActivity.super.hideProgressBar();   // Hides the progress bar just before displaying a result
+                        CheeseActivity.super.showResult(result);
+                    }
+                });
     }
 
     // Declares a method that returns an observable that will emit strings
@@ -55,18 +81,19 @@ public class CheeseActivity extends BaseSearchActivity {
             @Override
             public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
 
-                mSearchButton.setOnClickListener(new View.OnClickListener() {
+                CheeseActivity.super.mSearchButton.setOnClickListener(new View.OnClickListener() {
                     // When the click event happens, call 'onNext' on the emitter to send a String
                     @Override
                     public void onClick(View v) {
-                        emitter.onNext(mQueryEditText.getText().toString());
+                        Log.d(CheeseActivity.TAG, "'Search button' clicked");
+                        emitter.onNext(CheeseActivity.super.mQueryEditText.getText().toString());
                     }
                 });
 
                 emitter.setCancellable(new Cancellable() {
                     @Override
                     public void cancel() throws Exception {
-                        mSearchButton.setOnClickListener(null);
+                        CheeseActivity.super.mSearchButton.setOnClickListener(null);
                     }
                 });
             }
