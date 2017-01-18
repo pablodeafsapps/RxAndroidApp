@@ -29,9 +29,25 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.functions.Cancellable;
+import io.reactivex.functions.Consumer;
 
 public class CheeseActivity extends BaseSearchActivity {
 
+    @Override
+    protected void onStart() {
+        super.onStart();   // It is always important to let the parent perform first!
+
+        // The 'onStart' method is an ideal place to subscribe to any Observable
+        this.createButtonClickObservable().subscribe(new Consumer<String>() {
+            // 'accept' will be called when the observable emits an item
+            @Override
+            public void accept(String query) throws Exception {
+                showResult(mCheeseSearchEngine.search(query));
+            }
+        });
+    }
+
+    // Declares a method that returns an observable that will emit strings
     private Observable<String> createButtonClickObservable() {
 
         // 'ObservableOnSubscribe' belongs to the 'rxjava2' library
@@ -40,6 +56,7 @@ public class CheeseActivity extends BaseSearchActivity {
             public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
 
                 mSearchButton.setOnClickListener(new View.OnClickListener() {
+                    // When the click event happens, call 'onNext' on the emitter to send a String
                     @Override
                     public void onClick(View v) {
                         emitter.onNext(mQueryEditText.getText().toString());
@@ -55,6 +72,4 @@ public class CheeseActivity extends BaseSearchActivity {
             }
         });
     }
-
-
 }
