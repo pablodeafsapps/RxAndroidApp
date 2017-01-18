@@ -22,7 +22,39 @@
 
 package com.raywenderlich.cheesefinder;
 
+
+import android.view.View;
+
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.functions.Cancellable;
+
 public class CheeseActivity extends BaseSearchActivity {
+
+    private Observable<String> createButtonClickObservable() {
+
+        // 'ObservableOnSubscribe' belongs to the 'rxjava2' library
+        return Observable.create(new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
+
+                mSearchButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        emitter.onNext(mQueryEditText.getText().toString());
+                    }
+                });
+
+                emitter.setCancellable(new Cancellable() {
+                    @Override
+                    public void cancel() throws Exception {
+                        mSearchButton.setOnClickListener(null);
+                    }
+                });
+            }
+        });
+    }
 
 
 }
