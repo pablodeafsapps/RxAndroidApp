@@ -23,6 +23,8 @@
 package com.raywenderlich.cheesefinder;
 
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 
@@ -45,7 +47,10 @@ public class CheeseActivity extends BaseSearchActivity {
     protected void onStart() {
         super.onStart();   // It is always important to let the parent perform first!
 
-        // The 'onStart' method is an ideal place to subscribe to any Observable
+        /*
+         * The 'onStart' method is an ideal place to subscribe to any Observable
+         */
+        // Subscription to Button-click events
         this.createButtonClickObservable()
                 .observeOn(AndroidSchedulers.mainThread())   // Ensures that the next operator in chain will be run on the main thread
                 .doOnNext(new Consumer<String>() {   // Called every time a new item is emitted
@@ -71,9 +76,36 @@ public class CheeseActivity extends BaseSearchActivity {
                         CheeseActivity.super.showResult(result);
                     }
                 });
+        // Subscription to EditText-change events
+        this.createTextChangeObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext(new Consumer<String>() {   // Called every time a new item is emitted
+                    @Override
+                    public void accept(String string) throws Exception {
+
+                        CheeseActivity.super.showProgressBar();
+                    }
+                })
+                .observeOn(Schedulers.io())   // The next operator should be called on the I/O thread
+                .map(new Function<String, List<String>>() {
+                    // For each search query, a list of results is returned
+                    @Override
+                    public List<String> apply(String query) throws Exception {
+                        return CheeseActivity.super.mCheeseSearchEngine.search(query);
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<List<String>>() {
+                    // 'accept' will be called when the observable emits an item
+                    @Override
+                    public void accept(List<String> result) throws Exception {
+                        CheeseActivity.super.hideProgressBar();   // Hides the progress bar just before displaying a result
+                        CheeseActivity.super.showResult(result);
+                    }
+                });
     }
 
-    // Declares a method that returns an observable that will emit strings
+    // Declares a method that returns an observable that will emit strings when a Button is clicked
     private Observable<String> createButtonClickObservable() {
 
         // 'ObservableOnSubscribe' belongs to the 'rxjava2' library
@@ -94,6 +126,39 @@ public class CheeseActivity extends BaseSearchActivity {
                     @Override
                     public void cancel() throws Exception {
                         CheeseActivity.super.mSearchButton.setOnClickListener(null);
+                    }
+                });
+            }
+        });
+    }
+
+    // Declares a method that returns an observable that will emit strings when an EditText changes
+    private Observable<String> createTextChangeObservable() {
+
+        return Observable.create(new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
+
+                CheeseActivity.super.mQueryEditText.addTextChangedListener(new TextWatcher() {
+                    // When the EditText content changes, 'onNext' on the emitter to send a String
+                    @Override
+                    public void beforeTextChanged(CharSequence string, int start, int count, int after) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence string, int start, int before, int count) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+                        emitter.onNext(editable.toString());
+                    }
+                });
+
+                emitter.setCancellable(new Cancellable() {
+                    @Override
+                    public void cancel() throws Exception {
+                        CheeseActivity.super.mQueryEditText.addTextChangedListener(null);
                     }
                 });
             }
